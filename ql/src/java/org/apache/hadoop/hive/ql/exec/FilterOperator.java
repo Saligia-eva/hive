@@ -70,15 +70,15 @@ public class FilterOperator extends Operator<FilterDesc> implements
 
   @Override
   public void process(Object row, int tag) throws HiveException {
-    ObjectInspector rowInspector = inputObjInspectors[tag];
+    ObjectInspector rowInspector = inputObjInspectors[tag]; // 获取所有的列名称
     if (conditionInspector == null) {
-      conditionInspector = (PrimitiveObjectInspector) conditionEvaluator
+      conditionInspector = (PrimitiveObjectInspector) conditionEvaluator // 判断条件
           .initialize(rowInspector);
     }
 
     // If the input is sorted, and we are executing a search based on the arguments to this filter,
     // set the comparison in the IOContext and the type of the UDF
-    if (conf.isSortedFilter() && ioContext.useSorted()) {
+    if (conf.isSortedFilter() && ioContext.useSorted()) {  // sort
       if (!(conditionEvaluator instanceof ExprNodeGenericFuncEvaluator)) {
         LOG.error("Attempted to use the fact data is sorted when the conditionEvaluator is not " +
                   "of type ExprNodeGenericFuncEvaluator");

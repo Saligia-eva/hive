@@ -159,7 +159,7 @@ public class CliDriver {
             stringifyException(e));
         ret = 1;
       }
-    }  else { // local mode
+    }  else { // local mode 常见命令
       try {
         CommandProcessor proc = CommandProcessorFactory.get(tokens, (HiveConf) conf);
         ret = processLocalCmd(cmd, proc, ss);
@@ -230,7 +230,7 @@ public class CliDriver {
               if (out instanceof FetchConverter) {
                 ((FetchConverter)out).fetchStarted();
               }
-              while (qp.getResults(res)) {
+              while (qp.getResults(res)) { // 获取结果并打印
                 for (String r : res) {
                   out.println(r);
                 }

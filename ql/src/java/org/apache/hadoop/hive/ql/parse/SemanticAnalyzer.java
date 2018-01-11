@@ -1128,8 +1128,8 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
    * destToSelExpr 5. Creates a mapping from a table alias to the lateral view
    * AST's in aliasToLateralViews
    *
-   * @param ast
-   * @param qb
+   * @param ast  doPhase1对ASTTree中的每个元素的TOK类型进行case，针对于不同的case对节点数据进行填充。 for遍历整棵ASTTree，中间对每个元素递归调用doPhase1，这种方式是一种深度优先搜索的算法。 经过一轮深度优先遍历，不带元数据的QB树就生成了。
+   * @param qb  参数qb是一个空的QB，在不同case类型下对齐进行填满。
    * @param ctx_1
    * @throws SemanticException
    */
@@ -1571,7 +1571,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
 
       for (String alias : tabAliases) {
         String tab_name = qb.getTabNameForAlias(alias);
-        Table tab = db.getTable(tab_name, false);
+        Table tab = db.getTable(tab_name, false);  //  从数据库获取到相关信息， 以及列的相关信息
         if (tab == null) {
           /*
            * if this s a CTE reference:
@@ -9349,7 +9349,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
       rwsch = new RowResolver();
       try {
         StructObjectInspector rowObjectInspector = (StructObjectInspector) tab
-            .getDeserializer().getObjectInspector();
+            .getDeserializer().getObjectInspector(); // 返回列的元信息 ， 列名称与列格式 comment 等信息
         List<? extends StructField> fields = rowObjectInspector
             .getAllStructFieldRefs();
         for (int i = 0; i < fields.size(); i++) {
@@ -9664,8 +9664,8 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
     }
 
     // Recurse over all the source tables
-    for (String alias : qb.getTabAliases()) {
-      Operator op = genTablePlan(alias, qb);
+    for (String alias : qb.getTabAliases()) {  // 根据涉及到的表获取每一个表的元信息
+      Operator op = genTablePlan(alias, qb);  // TableScan Operator 里面记录 相关信息 例如:(rowSchema，conf<alias, tableMetadata<tTable, Serde, inputFormatClass,outputFormatClass, path,handler>>)
       aliasToOpInfo.put(alias, op);
     }
 
@@ -10037,10 +10037,10 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
     this.ast = ast;
     viewsExpanded = new ArrayList<String>();
     ctesExpanded = new ArrayList<String>();
-
+    /* ------------------- 产生 QueryBlock ----------------------------*/
     // 1. analyze and process the position alias
     processPositionAlias(ast);
-
+    // 处理 create table 命令
     // 2. analyze create table command
     if (ast.getToken().getType() == HiveParser.TOK_CREATETABLE) {
       // if it is not CTAS, we don't need to go further and just return
@@ -10068,13 +10068,13 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
     Phase1Ctx ctx_1 = initPhase1Ctx();
     preProcessForInsert(child, qb);
     if (!doPhase1(child, qb, ctx_1, plannerCtx)) {
-      // if phase1Result false return
+      // 如果doPhase1执行成功那么就会得到一个QB if phase1Result false return
       return false;
     }
     LOG.info("Completed phase 1 of Semantic Analysis");
-
+    // doPhase1执行完毕之后得到QB，QB里边的只是一些关键字还有一些表的名字，但是和hdfs的文件路径对应不起来，所以需要metaData映射关系，之后在SemanticAnalyzer中调用了 getMetaData
     // 5. Resolve Parse Tree
-    getMetaData(qb);
+    getMetaData(qb); //从数据库中获得相关信息
     LOG.info("Completed getting MetaData in Semantic Analysis");
 
     plannerCtx.setParseTreeAttr(child, ctx_1);
@@ -10125,13 +10125,13 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
   void analyzeInternal(ASTNode ast, PlannerContext plannerCtx) throws SemanticException {
     // 1. Generate Resolved Parse tree from syntax tree
     LOG.info("Starting Semantic Analysis");
-    if (!genResolvedParseTree(ast, plannerCtx)) {
+    if (!genResolvedParseTree(ast, plannerCtx)) {   // 生成 QueryBlock
       return;
     }
-
-    // 2. Gen OP Tree from resolved Parse Tree
+    // 问题 ? rowSchema 是如何构造出来的。  -- colExprMap 中的值是如何注入的。
+    // 2. Gen OP Tree from resolved Parse Tree  // 将  QueryBlock -> OperatorTree
     Operator sinkOp = genOPTree(ast, plannerCtx);
-
+    // 获取相关字段信息，如何获取出来的。
     // 3. Deduce Resultset Schema
     if (createVwDesc != null) {
       resultSchema = convertRowSchemaToViewSchema(opParseCtx.get(sinkOp).getRowResolver());
@@ -10178,7 +10178,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
       TableAccessAnalyzer tableAccessAnalyzer = new TableAccessAnalyzer(pCtx);
       setTableAccessInfo(tableAccessAnalyzer.analyzeTableAccess());
     }
-
+    // 执行逻辑优化
     // 7. Perform Logical optimization
     if (LOG.isDebugEnabled()) {
       LOG.debug("Before logical optimization\n" + Operator.toString(pCtx.getTopOps().values()));
@@ -10187,11 +10187,11 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
     optm.setPctx(pCtx);
     optm.initialize(conf);
     pCtx = optm.optimize();
-    FetchTask origFetchTask = pCtx.getFetchTask();
+    FetchTask origFetchTask = pCtx.getFetchTask();  // 转为物理执行
     if (LOG.isDebugEnabled()) {
       LOG.debug("After logical optimization\n" + Operator.toString(pCtx.getTopOps().values()));
     }
-
+    // 根据需要生成列访问统计信息 - 等待列优化过程中进行修剪
     // 8. Generate column access stats if required - wait until column pruning
     // takes place during optimization
     boolean isColumnInfoNeedForAuth = SessionState.get().isAuthorizationModeV2()
@@ -10201,22 +10201,22 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
       ColumnAccessAnalyzer columnAccessAnalyzer = new ColumnAccessAnalyzer(pCtx);
       setColumnAccessInfo(columnAccessAnalyzer.analyzeColumnAccess());
     }
-
+    // 优化物理操作树＆转换为目标执行引擎
     // 9. Optimize Physical op tree & Translate to target execution engine (MR,
     // TEZ..)
     if (!ctx.getExplainLogical()) {
       TaskCompiler compiler = TaskCompilerFactory.getCompiler(conf, pCtx);
       compiler.init(conf, console, db);
       compiler.compile(pCtx, rootTasks, inputs, outputs);
-      fetchTask = pCtx.getFetchTask();
+      fetchTask = pCtx.getFetchTask();  // 物理执行计划的开始
     }
     LOG.info("Completed plan generation");
-
+    // 把访问列放到readEntity中
     // 10. put accessed columns to readEntity
     if (HiveConf.getBoolVar(this.conf, HiveConf.ConfVars.HIVE_STATS_COLLECT_SCANCOLS)) {
       putAccessedColumnsToReadEntity(inputs, columnAccessInfo);
     }
-
+    // 检查我们不会超过分区扫描限制
     // 11. if desired check we're not going over partition scan limits
     if (!ctx.getExplain()) {
       enforceScanLimits(pCtx, origFetchTask);
@@ -10722,7 +10722,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
    * to the SerDe and Storage Format.
    */
   ASTNode analyzeCreateTable(
-      ASTNode ast, QB qb, PlannerContext plannerCtx) throws SemanticException {
+      ASTNode ast, QB qb, PlannerContext plannerCtx) throws SemanticException {  // 创建表操作
     String[] qualifiedTabName = getQualifiedTableName((ASTNode) ast.getChild(0));
     String dbDotTab = getDotName(qualifiedTabName);
 
@@ -10750,7 +10750,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
     boolean isUserStorageFormat = false;
 
     RowFormatParams rowFormatParams = new RowFormatParams();
-    StorageFormat storageFormat = new StorageFormat(conf);
+    StorageFormat storageFormat = new StorageFormat(conf);   // 保存存储格式， 以及输入输出格式， serde 等
 
     LOG.info("Creating table " + dbDotTab + " position="
         + ast.getCharPositionInLine());
@@ -10764,7 +10764,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
      */
     for (int num = 1; num < numCh; num++) {
       ASTNode child = (ASTNode) ast.getChild(num);
-      if (storageFormat.fillStorageFormat(child)) {
+      if (storageFormat.fillStorageFormat(child)) {  // 填充存储格式 -- 需要
         isUserStorageFormat = true;
         continue;
       }
@@ -10819,7 +10819,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
         }
         selectStmt = child;
         break;
-      case HiveParser.TOK_TABCOLLIST:
+      case HiveParser.TOK_TABCOLLIST:  // 根据 TOK_TABCOLLIST 的列信息， 获取相关
         cols = getColumns(child);
         break;
       case HiveParser.TOK_TABLECOMMENT:
@@ -10924,7 +10924,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
 
     case CREATE_TABLE: // REGULAR CREATE TABLE DDL
       tblProps = addDefaultProperties(tblProps);
-
+      // 创建表的描述信息
       CreateTableDesc crtTblDesc = new CreateTableDesc(dbDotTab, isExt, isTemporary, cols, partCols,
           bucketCols, sortCols, numBuckets, rowFormatParams.fieldDelim,
           rowFormatParams.fieldEscape,
@@ -10941,7 +10941,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
       // database.
       SessionState.get().setCommandType(HiveOperation.CREATETABLE);
       rootTasks.add(TaskFactory.get(new DDLWork(getInputs(), getOutputs(),
-          crtTblDesc), conf));
+          crtTblDesc), conf));  // 创建一个 DDL TASK 去创建表
       break;
 
     case CTLT: // create table like <tbl_name>

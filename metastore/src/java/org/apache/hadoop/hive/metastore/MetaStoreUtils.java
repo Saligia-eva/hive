@@ -390,7 +390,7 @@ public class MetaStoreUtils {
       } else {
         SerDeUtils.initializeSerDe(deserializer, conf, MetaStoreUtils.getTableMetadata(table), null);
       }
-      return deserializer;
+      return deserializer;  // 返回的是一个 serde
     } catch (RuntimeException e) {
       throw e;
     } catch (Exception e) {

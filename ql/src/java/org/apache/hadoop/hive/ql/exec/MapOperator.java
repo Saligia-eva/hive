@@ -159,7 +159,7 @@ public class MapOperator extends Operator<MapWork> implements Serializable, Clon
       if (op.getDone()) {
         return false;
       }
-      op.process(row, 0);
+      op.process(row, 0);  // 调用  operator.process
       return true;
     }
   }
@@ -316,11 +316,11 @@ public class MapOperator extends Operator<MapWork> implements Serializable, Clon
             if (!partRawRowObjectInspector.equals(tblRawRowObjectInspector)) {
               identityConverterTableDesc.remove(tableDesc);
             }
-          }
+          } // tblRawRowObjectInspector: fields
           else if (partRawRowObjectInspector.equals(tblRawRowObjectInspector)) {
             identityConverterTableDesc.add(tableDesc);
           }
-
+          // tableDesc ： inputfileFormatClass, outputfileFormatClass, properties
           tableDescOI.put(tableDesc, tblRawRowObjectInspector);
         }
       }
@@ -335,7 +335,7 @@ public class MapOperator extends Operator<MapWork> implements Serializable, Clon
     List<Operator<? extends OperatorDesc>> children =
         new ArrayList<Operator<? extends OperatorDesc>>();
 
-    Map<TableDesc, StructObjectInspector> convertedOI = getConvertedOI(hconf);
+    Map<TableDesc, StructObjectInspector> convertedOI = getConvertedOI(hconf); // 从 confing 文件中获取表的描述信息
 
     for (Map.Entry<String, ArrayList<String>> entry : conf.getPathToAliases().entrySet()) {
       String onefile = entry.getKey();

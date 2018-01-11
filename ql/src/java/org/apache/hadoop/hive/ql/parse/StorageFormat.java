@@ -68,7 +68,7 @@ public class StorageFormat {
           serdeProps);
       }
       break;
-    case HiveParser.TOK_FILEFORMAT_GENERIC:
+      case HiveParser.TOK_FILEFORMAT_GENERIC:  // 获取存储信息 例如 : stored as orc
       ASTNode grandChild = (ASTNode)child.getChild(0);
       String name = (grandChild == null ? "" : grandChild.getText()).trim().toUpperCase();
       processStorageFormat(name);

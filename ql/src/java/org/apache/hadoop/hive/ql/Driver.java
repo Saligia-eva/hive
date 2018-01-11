@@ -393,7 +393,7 @@ public class Driver implements CommandProcessor {
 
       perfLogger.PerfLogBegin(CLASS_NAME, PerfLogger.PARSE);
       ParseDriver pd = new ParseDriver();
-      ASTNode tree = pd.parse(command, ctx);
+      ASTNode tree = pd.parse(command, ctx);  // 语法分析和此法分析， 生成 AST NOTE
       tree = ParseUtils.findRootNonNullToken(tree);
       perfLogger.PerfLogEnd(CLASS_NAME, PerfLogger.PARSE);
 
@@ -421,7 +421,7 @@ public class Driver implements CommandProcessor {
         for (HiveSemanticAnalyzerHook hook : saHooks) {
           tree = hook.preAnalyze(hookCtx, tree);
         }
-        sem.analyze(tree, ctx);
+        sem.analyze(tree, ctx);  // root task
         hookCtx.update(sem);
         for (HiveSemanticAnalyzerHook hook : saHooks) {
           hook.postAnalyze(hookCtx, sem.getRootTasks());
@@ -1167,7 +1167,7 @@ public class Driver implements CommandProcessor {
 
     int ret;
     if (!alreadyCompiled) {
-      ret = compileInternal(command);
+      ret = compileInternal(command);   // SQL 编译过程
       if (ret != 0) {
         return createProcessorResponse(ret);
       }
@@ -1650,7 +1650,7 @@ public class Driver implements CommandProcessor {
       if (LOG.isInfoEnabled()){
         LOG.info("Starting task [" + tsk + "] in serial mode");
       }
-      tskRun.runSequential();
+      tskRun.runSequential();  // 任务执行入口
     }
     return tskRun;
   }

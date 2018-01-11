@@ -127,7 +127,7 @@ public class OrcSerde implements SerDe, VectorizedSerde {
   }
 
   @Override
-  public ObjectInspector getObjectInspector() throws SerDeException {
+  public ObjectInspector getObjectInspector() throws SerDeException {  // 返回列元信息
     return inspector;
   }
 

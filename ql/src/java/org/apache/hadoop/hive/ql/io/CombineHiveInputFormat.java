@@ -362,12 +362,12 @@ public class CombineHiveInputFormat<K extends WritableComparable, V extends Writ
       }
 
       // Use HiveInputFormat if any of the paths is not splittable
-      Class inputFormatClass = part.getInputFileFormatClass();
+      Class inputFormatClass = part.getInputFileFormatClass();                   // 获取原数据表对应的 inputformat class
       String inputFormatClassName = inputFormatClass.getName();
       InputFormat inputFormat = getInputFormatFromCache(inputFormatClass, job);
       String deserializerClassName = null;
       try {
-        deserializerClassName = part.getDeserializer(job).getClass().getName();
+        deserializerClassName = part.getDeserializer(job).getClass().getName();  // 获取原数据表对应的 serde
       } catch (Exception e) {
         // ignore
       }

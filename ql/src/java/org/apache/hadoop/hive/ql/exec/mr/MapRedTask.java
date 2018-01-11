@@ -90,7 +90,7 @@ public class MapRedTask extends ExecDriver implements Serializable {
       }
 
       // estimate number of reducers
-      setNumberOfReducers();
+      setNumberOfReducers();  // 设置 reduce 的数量
 
       // auto-determine local mode if allowed
       if (!ctx.isLocalOnlyExecutionMode() &&

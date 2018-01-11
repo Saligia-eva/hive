@@ -235,7 +235,7 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
     //See the javadoc on HiveOutputFormatImpl and HadoopShims.prepareJobOutput()
     job.setOutputFormat(HiveOutputFormatImpl.class);
 
-    job.setMapperClass(ExecMapper.class);
+    job.setMapperClass(ExecMapper.class);  // Map Task
 
     job.setMapOutputKeyClass(HiveKey.class);
     job.setMapOutputValueClass(BytesWritable.class);
@@ -268,7 +268,7 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
     }
 
     job.setNumReduceTasks(rWork != null ? rWork.getNumReduceTasks().intValue() : 0);
-    job.setReducerClass(ExecReducer.class);
+    job.setReducerClass(ExecReducer.class);  // 设置 ReduceTask
 
     // set input format information if necessary
     setInputAttributes(job);
@@ -369,7 +369,7 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
         }
       }
       work.configureJobConf(job);
-      List<Path> inputPaths = Utilities.getInputPaths(job, mWork, emptyScratchDir, ctx, false);
+      List<Path> inputPaths = Utilities.getInputPaths(job, mWork, emptyScratchDir, ctx, false);  // 输入信息存放在 ctx 中的 pathToCS 中
       Utilities.setInputPaths(job, inputPaths);
 
       Utilities.setMapRedWork(job, work, ctx.getMRTmpPath());
@@ -428,7 +428,7 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
       }
 
       // Finally SUBMIT the JOB!
-      rj = jc.submitJob(job);
+      rj = jc.submitJob(job);  // 作业提交执行
       // replace it back
       if (pwd != null) {
         HiveConf.setVar(job, HiveConf.ConfVars.METASTOREPWD, pwd);

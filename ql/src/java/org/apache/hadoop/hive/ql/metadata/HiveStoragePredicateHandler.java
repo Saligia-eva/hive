@@ -43,16 +43,16 @@ public interface HiveStoragePredicateHandler {
    * predicate <code>x LIKE 'a%b'</code>, the storage handler might
    * be able to evaluate the prefix search <code>x LIKE 'a%'</code>, leaving
    * <code>x LIKE '%b'</code> as the residual.
-   *
+   * 用户过滤器处理
    * @param jobConf contains a job configuration matching the one that
    * will later be passed to getRecordReader and getSplits
-   *
+   * 包含一个匹配稍后传递给getRecordReader和getSplits的作业配置
    * @param deserializer deserializer which will be used when
    * fetching rows
+   * 反序列化器将用于获取行
+   * @param predicate predicate to be decomposed 谓词被分解
    *
-   * @param predicate predicate to be decomposed
-   *
-   * @return decomposed form of predicate, or null if no pushdown is
+   * @return decomposed form of predicate, or null if no pushdown is  谓词的分解形式，如果根本不可能下推，则为null
    * possible at all
    */
   public DecomposedPredicate decomposePredicate(

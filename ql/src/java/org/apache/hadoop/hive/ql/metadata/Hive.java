@@ -711,7 +711,7 @@ public class Hive {
           tTbl.setPrivileges(principalPrivs);
         }
       }
-      getMSC().createTable(tTbl);
+      getMSC().createTable(tTbl);  // 写入数据库
     } catch (AlreadyExistsException e) {
       if (!ifNotExists) {
         throw new HiveException(e);

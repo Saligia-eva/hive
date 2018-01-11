@@ -44,7 +44,7 @@ public class TaskRunner extends Thread {
 
   protected Thread runner;
 
-  public TaskRunner(Task<? extends Serializable> tsk, TaskResult result) {
+  public  TaskRunner(Task<? extends Serializable> tsk, TaskResult result) {
     this.tsk = tsk;
     this.result = result;
     ss = SessionState.get();
