@@ -135,7 +135,7 @@ class HiveHBaseInputFormatUtil {
 
   public static boolean getStorageFormatOfKey(String spec, String defaultFormat) throws IOException{
 
-    String[] mapInfo = spec.split("#");
+     String[] mapInfo = spec.split("#");
     boolean tblLevelDefault = "binary".equalsIgnoreCase(defaultFormat);
 
     switch (mapInfo.length) {

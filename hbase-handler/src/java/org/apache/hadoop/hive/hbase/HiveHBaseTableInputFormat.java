@@ -181,7 +181,7 @@ public class HiveHBaseTableInputFormat extends TableInputFormatBase
       throws IOException {
 
     // TODO: assert iKey is HBaseSerDe#HBASE_KEY_COL
-
+    // 获取过滤方式
     Scan scan = new Scan();
     String filterObjectSerialized = jobConf.get(TableScanDesc.FILTER_OBJECT_CONF_STR);
     if (filterObjectSerialized != null) {
@@ -439,26 +439,26 @@ public class HiveHBaseTableInputFormat extends TableInputFormatBase
     if (UserGroupInformation.getCurrentUser().hasKerberosCredentials()) {
       TableMapReduceUtil.initCredentials(jobConf);
     }
-
+    // 获取 tableName : jobConf.hbase.table.name
     String hbaseTableName = jobConf.get(HBaseSerDe.HBASE_TABLE_NAME);
     setHTable(new HTable(HBaseConfiguration.create(jobConf), Bytes.toBytes(hbaseTableName)));
-    String hbaseColumnsMapping = jobConf.get(HBaseSerDe.HBASE_COLUMNS_MAPPING);
+    String hbaseColumnsMapping = jobConf.get(HBaseSerDe.HBASE_COLUMNS_MAPPING); //jobconf.hbase.columns.mapping
     boolean doColumnRegexMatching = jobConf.getBoolean(HBaseSerDe.HBASE_COLUMNS_REGEX_MATCHING, true);
 
     if (hbaseColumnsMapping == null) {
       throw new IOException(HBaseSerDe.HBASE_COLUMNS_MAPPING + " required for HBase Table.");
     }
-
-    ColumnMappings columnMappings = null;
+    // 解析出所有涉及到的列
+    ColumnMappings columnMappings = null; // 列信息
     try {
       columnMappings = HBaseSerDe.parseColumnsMapping(hbaseColumnsMapping, doColumnRegexMatching);
     } catch (SerDeException e) {
       throw new IOException(e);
     }
 
-    int iKey = columnMappings.getKeyIndex();
-    int iTimestamp = columnMappings.getTimestampIndex();
-    ColumnMapping keyMapping = columnMappings.getKeyMapping();
+    int iKey = columnMappings.getKeyIndex();              // 获取 key,
+    int iTimestamp = columnMappings.getTimestampIndex();  // 获取  timestamp
+    ColumnMapping keyMapping = columnMappings.getKeyMapping(); // 获取主键列
 
     // Take filter pushdown into account while calculating splits; this
     // allows us to prune off regions immediately.  Note that although
@@ -486,7 +486,7 @@ public class HiveHBaseTableInputFormat extends TableInputFormatBase
       } else {
         if(!addedFamilies.contains(colMap.familyName)){
           // add the column only if the family has not already been added
-          scan.addColumn(colMap.familyNameBytes, colMap.qualifierNameBytes);
+          scan.addColumn(colMap.familyNameBytes, colMap.qualifierNameBytes);  // 查询指定的列
         }
       }
     }

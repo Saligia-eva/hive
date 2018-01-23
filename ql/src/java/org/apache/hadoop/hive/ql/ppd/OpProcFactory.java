@@ -789,7 +789,7 @@ public final class OpProcFactory {
     }
     return null;
   }
-
+  //
   protected static Object createFilter(Operator op,
       Map<String, List<ExprNodeDesc>> predicates, OpWalkerInfo owi) {
     RowSchema inputRS = op.getSchema();

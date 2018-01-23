@@ -1181,7 +1181,7 @@ public class OrcInputFormat  implements InputFormat<NullWritable, OrcStruct>,
   public RowReader<OrcStruct> getReader(InputSplit inputSplit,
                                         Options options) throws IOException {
     final OrcSplit split = (OrcSplit) inputSplit;
-    final Path path = split.getPath();
+    final Path path = split.getPath();  // 获取输入路径
     Path root;
     if (split.hasBase()) {
       if (split.isOriginal()) {

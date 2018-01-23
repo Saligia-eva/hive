@@ -535,7 +535,7 @@ public class HBaseStorageHandler extends DefaultStorageHandler
   }
 
   @Override
-  public DecomposedPredicate decomposePredicate(
+  public DecomposedPredicate decomposePredicate(   // 谓词下推过程
     JobConf jobConf,
     Deserializer deserializer,
     ExprNodeDesc predicate)
@@ -543,7 +543,7 @@ public class HBaseStorageHandler extends DefaultStorageHandler
     HBaseKeyFactory keyFactory = ((HBaseSerDe) deserializer).getKeyFactory();
     return keyFactory.decomposePredicate(jobConf, deserializer, predicate);
   }
-
+  // predicate 中存放谓词条件
   public static DecomposedPredicate decomposePredicate(
       JobConf jobConf,
       HBaseSerDe hBaseSerDe,

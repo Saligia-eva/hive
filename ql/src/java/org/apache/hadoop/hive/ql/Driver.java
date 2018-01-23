@@ -1402,7 +1402,7 @@ public class Driver implements CommandProcessor {
 
       perfLogger.PerfLogEnd(CLASS_NAME, PerfLogger.TIME_TO_SUBMIT);
       perfLogger.PerfLogBegin(CLASS_NAME, PerfLogger.RUN_TASKS);
-      // Loop while you either have tasks running, or tasks queued up
+      // Loop while you either have tasks running, or tasks queued up  执行任务
       while (!destroyed && driverCxt.isRunning()) {
 
         // Launch upto maxthreads tasks

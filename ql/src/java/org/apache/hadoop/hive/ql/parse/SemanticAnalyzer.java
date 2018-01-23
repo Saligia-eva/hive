@@ -10044,7 +10044,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
     // 2. analyze create table command
     if (ast.getToken().getType() == HiveParser.TOK_CREATETABLE) {
       // if it is not CTAS, we don't need to go further and just return
-      if ((child = analyzeCreateTable(ast, qb, plannerCtx)) == null) {
+      if ((child = analyzeCreateTable(ast, qb, plannerCtx)) == null) { // 填充 创建表所需要的相关属性， 填充到 rootTask -> work -> createTableDesc 的相关信息中
         return false;
       }
     } else {
@@ -10186,7 +10186,7 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
     Optimizer optm = new Optimizer();
     optm.setPctx(pCtx);
     optm.initialize(conf);
-    pCtx = optm.optimize();
+    pCtx = optm.optimize(); // 谓词下推过程
     FetchTask origFetchTask = pCtx.getFetchTask();  // 转为物理执行
     if (LOG.isDebugEnabled()) {
       LOG.debug("After logical optimization\n" + Operator.toString(pCtx.getTopOps().values()));
