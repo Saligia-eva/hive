@@ -50,6 +50,7 @@
     <module>spark-client</module>
     <module>testutils</module>
     <module>packaging</module>
+    <module>druid-handler</module>
   </modules>
 
   <properties>
