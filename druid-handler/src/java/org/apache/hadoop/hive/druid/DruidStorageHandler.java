@@ -3,14 +3,20 @@ package org.apache.hadoop.hive.druid;
 import org.apache.hadoop.hive.metastore.HiveMetaHook;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.ql.index.IndexPredicateAnalyzer;
+import org.apache.hadoop.hive.ql.index.IndexSearchCondition;
 import org.apache.hadoop.hive.ql.metadata.DefaultStorageHandler;
 import org.apache.hadoop.hive.ql.metadata.HiveStoragePredicateHandler;
 import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
+import org.apache.hadoop.hive.ql.plan.ExprNodeGenericFuncDesc;
 import org.apache.hadoop.hive.serde2.Deserializer;
 import org.apache.hadoop.hive.serde2.SerDe;
 import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.OutputFormat;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <pre>
@@ -131,7 +137,7 @@ public class DruidStorageHandler extends DefaultStorageHandler
 
     @Override
     public Class<? extends SerDe> getSerDeClass() {
-        return super.getSerDeClass();
+        return DruidSerDe.class;
     }
 
     @Override
@@ -139,6 +145,21 @@ public class DruidStorageHandler extends DefaultStorageHandler
         return this;
     }
 
+    static IndexPredicateAnalyzer newIndexPredicateAnalyzer(String timestampColumn) {
+
+        IndexPredicateAnalyzer analyzer = new IndexPredicateAnalyzer();
+
+        if (timestampColumn != null) {
+            analyzer.addComparisonOp(timestampColumn,
+                    "org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPEqual",
+                    "org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPEqualOrGreaterThan",
+                    "org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPEqualOrLessThan",
+                    "org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPLessThan",
+                    "org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPGreaterThan");
+        }
+
+        return analyzer;
+    }
     /**
      * <pre>
      *     谓词下推工具
@@ -146,12 +167,32 @@ public class DruidStorageHandler extends DefaultStorageHandler
      *
      * @author　saligia
      * @param jobConf 作业提交的配置
-     * @param deserializer
+     * @param deserializer DruidSerde
      * @param predicate  谓词信息
      * @return　谓词下推信息
      */
     @Override
     public DecomposedPredicate decomposePredicate(JobConf jobConf, Deserializer deserializer, ExprNodeDesc predicate) {
-        return null;
+        DecomposedPredicate decomposedPredicate = new DecomposedPredicate();  // 需要使用深度优先遍历.
+
+        /**
+         * 获取时间列
+         */
+        if(deserializer instanceof DruidSerDe){
+            String timecolumn = ((DruidSerDe) deserializer).getTimeColumn();
+            IndexPredicateAnalyzer analyzer = newIndexPredicateAnalyzer(timecolumn);
+            List<IndexSearchCondition> conditions = new ArrayList<IndexSearchCondition>();
+
+            ExprNodeGenericFuncDesc residualPredicate =
+                    (ExprNodeGenericFuncDesc)analyzer.analyzePredicate(predicate, conditions);
+
+            decomposedPredicate.pushedPredicate = analyzer.translateSearchConditions(conditions);   // 预处理
+            decomposedPredicate.residualPredicate = residualPredicate;                              // OperatorTree中后期处理
+            decomposedPredicate.pushedPredicateObject = residualPredicate;                          // 后期处理
+        }
+
+        //decomposedPredicate.pushedPredicateObject = predicate;
+
+        return decomposedPredicate;
     }
 }

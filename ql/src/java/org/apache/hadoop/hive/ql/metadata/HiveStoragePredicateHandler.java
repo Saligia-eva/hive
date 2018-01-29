@@ -66,7 +66,7 @@ public interface HiveStoragePredicateHandler {
   public static class DecomposedPredicate {
     /**
      * Portion of predicate to be evaluated by storage handler.  Hive
-     * will pass this into the storage handler's input format.
+     * will pass this into the storage handler's input format. 谓词的部分由存储处理程序进行评估。 Hive会将其传递给存储处理程序的输入格式。
      */
     public ExprNodeGenericFuncDesc pushedPredicate;
 

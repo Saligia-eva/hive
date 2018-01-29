@@ -38,6 +38,7 @@
     <module>common</module>
     <module>contrib</module>
     <module>hbase-handler</module>
+    <module>druid-handler</module>
     <module>hcatalog</module>
     <module>hwi</module>
     <module>jdbc</module>
@@ -50,7 +51,6 @@
     <module>spark-client</module>
     <module>testutils</module>
     <module>packaging</module>
-    <module>druid-handler</module>
   </modules>
 
   <properties>

@@ -68,6 +68,8 @@ public abstract class GenericUDF implements Closeable {
   private static final String[] ORDINAL_SUFFIXES = new String[] { "th", "st", "nd", "rd", "th",
       "th", "th", "th", "th", "th" };
 
+  public abstract Object evaluate(Object value, Object value1);
+
   /**
    * A Defered Object allows us to do lazy-evaluation and short-circuiting.
    * GenericUDF use DeferedObject to pass arguments.
