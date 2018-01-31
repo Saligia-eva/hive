@@ -191,6 +191,7 @@ public class DruidStorageHandler extends DefaultStorageHandler
             decomposedPredicate.pushedPredicateObject = residualPredicate;                          // 后期处理
         }
 
+
         //decomposedPredicate.pushedPredicateObject = predicate;
 
         return decomposedPredicate;

@@ -15,7 +15,7 @@ import java.util.List;
  * @author saligia
  * @date 18-1-23
  */
-public class DruidStruct implements Writable {
+public class  DruidStruct implements Writable {
     private Object[] fields ;
 
     public DruidStruct(int colNum){

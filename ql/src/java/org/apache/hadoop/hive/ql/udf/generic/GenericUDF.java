@@ -66,9 +66,7 @@ import org.apache.hive.common.util.DateUtils;
 public abstract class GenericUDF implements Closeable {
 
   private static final String[] ORDINAL_SUFFIXES = new String[] { "th", "st", "nd", "rd", "th",
-      "th", "th", "th", "th", "th" };
-
-  public abstract Object evaluate(Object value, Object value1);
+          "th", "th", "th", "th", "th" };
 
   /**
    * A Defered Object allows us to do lazy-evaluation and short-circuiting.
@@ -117,7 +115,7 @@ public abstract class GenericUDF implements Closeable {
    * @return The ObjectInspector for the return value
    */
   public abstract ObjectInspector initialize(ObjectInspector[] arguments)
-      throws UDFArgumentException;
+          throws UDFArgumentException;
 
   /**
    * Additionally setup GenericUDF with MapredContext before initializing.
@@ -136,14 +134,14 @@ public abstract class GenericUDF implements Closeable {
    * like initialize().
    */
   public ObjectInspector initializeAndFoldConstants(ObjectInspector[] arguments)
-      throws UDFArgumentException {
+          throws UDFArgumentException {
 
     ObjectInspector oi = initialize(arguments);
 
     // If the UDF depends on any external resources, we can't fold because the
     // resources may not be available at compile time.
     if (getRequiredFiles() != null ||
-        getRequiredJars() != null) {
+            getRequiredJars() != null) {
       return oi;
     }
 
@@ -156,15 +154,15 @@ public abstract class GenericUDF implements Closeable {
     }
 
     if (allConstant &&
-        !ObjectInspectorUtils.isConstantObjectInspector(oi) &&
-        FunctionRegistry.isDeterministic(this) &&
-        !FunctionRegistry.isStateful(this) &&
-        ObjectInspectorUtils.supportsConstantObjectInspector(oi)) {
+            !ObjectInspectorUtils.isConstantObjectInspector(oi) &&
+            FunctionRegistry.isDeterministic(this) &&
+            !FunctionRegistry.isStateful(this) &&
+            ObjectInspectorUtils.supportsConstantObjectInspector(oi)) {
       DeferredObject[] argumentValues =
-        new DeferredJavaObject[arguments.length];
+              new DeferredJavaObject[arguments.length];
       for (int ii = 0; ii < arguments.length; ++ii) {
         argumentValues[ii] = new DeferredJavaObject(
-            ((ConstantObjectInspector)arguments[ii]).getWritableConstantValue());
+                ((ConstantObjectInspector)arguments[ii]).getWritableConstantValue());
       }
       try {
         Object constantValue = evaluate(argumentValues);
@@ -199,7 +197,7 @@ public abstract class GenericUDF implements Closeable {
    * @return The
    */
   public abstract Object evaluate(DeferredObject[] arguments)
-      throws HiveException;
+          throws HiveException;
 
   /**
    * Get the String to be displayed in explain.
@@ -233,7 +231,7 @@ public abstract class GenericUDF implements Closeable {
     // newInstance should always be the same type of object as this
     if (this.getClass() != newInstance.getClass()) {
       throw new UDFArgumentException("Invalid copy between " + this.getClass().getName()
-          + " and " + newInstance.getClass().getName());
+              + " and " + newInstance.getClass().getName());
     }
   }
 
@@ -261,7 +259,7 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected void checkArgsSize(ObjectInspector[] arguments, int min, int max)
-      throws UDFArgumentLengthException {
+          throws UDFArgumentLengthException {
     if (arguments.length < min || arguments.length > max) {
       StringBuilder sb = new StringBuilder();
       sb.append(getFuncName());
@@ -278,16 +276,16 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected void checkArgPrimitive(ObjectInspector[] arguments, int i)
-      throws UDFArgumentTypeException {
+          throws UDFArgumentTypeException {
     ObjectInspector.Category oiCat = arguments[i].getCategory();
     if (oiCat != ObjectInspector.Category.PRIMITIVE) {
       throw new UDFArgumentTypeException(i, getFuncName() + " only takes primitive types as "
-          + getArgOrder(i) + " argument, got " + oiCat);
+              + getArgOrder(i) + " argument, got " + oiCat);
     }
   }
 
   protected void checkArgGroups(ObjectInspector[] arguments, int i, PrimitiveCategory[] inputTypes,
-      PrimitiveGrouping... grps) throws UDFArgumentTypeException {
+                                PrimitiveGrouping... grps) throws UDFArgumentTypeException {
     PrimitiveCategory inputType = ((PrimitiveObjectInspector) arguments[i]).getPrimitiveCategory();
     for (PrimitiveGrouping grp : grps) {
       if (PrimitiveObjectInspectorUtils.getPrimitiveGrouping(inputType) == grp) {
@@ -312,114 +310,114 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected void obtainStringConverter(ObjectInspector[] arguments, int i,
-      PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
+                                       PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
     PrimitiveObjectInspector inOi = (PrimitiveObjectInspector) arguments[i];
     PrimitiveCategory inputType = inOi.getPrimitiveCategory();
 
     Converter converter = ObjectInspectorConverters.getConverter(
-        arguments[i],
-        PrimitiveObjectInspectorFactory.writableStringObjectInspector);
+            arguments[i],
+            PrimitiveObjectInspectorFactory.writableStringObjectInspector);
     converters[i] = converter;
     inputTypes[i] = inputType;
   }
 
   protected void obtainIntConverter(ObjectInspector[] arguments, int i,
-      PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
+                                    PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
     PrimitiveObjectInspector inOi = (PrimitiveObjectInspector) arguments[i];
     PrimitiveCategory inputType = inOi.getPrimitiveCategory();
     switch (inputType) {
-    case BYTE:
-    case SHORT:
-    case INT:
-    case VOID:
-      break;
-    default:
-      throw new UDFArgumentTypeException(i, getFuncName() + " only takes INT/SHORT/BYTE types as "
-          + getArgOrder(i) + " argument, got " + inputType);
+      case BYTE:
+      case SHORT:
+      case INT:
+      case VOID:
+        break;
+      default:
+        throw new UDFArgumentTypeException(i, getFuncName() + " only takes INT/SHORT/BYTE types as "
+                + getArgOrder(i) + " argument, got " + inputType);
     }
 
     Converter converter = ObjectInspectorConverters.getConverter(
-        arguments[i],
-        PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+            arguments[i],
+            PrimitiveObjectInspectorFactory.writableIntObjectInspector);
     converters[i] = converter;
     inputTypes[i] = inputType;
   }
 
   protected void obtainLongConverter(ObjectInspector[] arguments, int i,
-      PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
+                                     PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
     PrimitiveObjectInspector inOi = (PrimitiveObjectInspector) arguments[i];
     PrimitiveCategory inputType = inOi.getPrimitiveCategory();
     switch (inputType) {
-    case BYTE:
-    case SHORT:
-    case INT:
-    case LONG:
-      break;
-    default:
-      throw new UDFArgumentTypeException(i, getFuncName()
-          + " only takes LONG/INT/SHORT/BYTE types as " + getArgOrder(i) + " argument, got "
-          + inputType);
+      case BYTE:
+      case SHORT:
+      case INT:
+      case LONG:
+        break;
+      default:
+        throw new UDFArgumentTypeException(i, getFuncName()
+                + " only takes LONG/INT/SHORT/BYTE types as " + getArgOrder(i) + " argument, got "
+                + inputType);
     }
 
     Converter converter = ObjectInspectorConverters.getConverter(
-        arguments[i],
-        PrimitiveObjectInspectorFactory.writableIntObjectInspector);
+            arguments[i],
+            PrimitiveObjectInspectorFactory.writableIntObjectInspector);
     converters[i] = converter;
     inputTypes[i] = inputType;
   }
 
   protected void obtainDoubleConverter(ObjectInspector[] arguments, int i,
-      PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
+                                       PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
     PrimitiveObjectInspector inOi = (PrimitiveObjectInspector) arguments[i];
     PrimitiveCategory inputType = inOi.getPrimitiveCategory();
     Converter converter = ObjectInspectorConverters.getConverter(
-        arguments[i],
-        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+            arguments[i],
+            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
     converters[i] = converter;
     inputTypes[i] = inputType;
   }
 
   protected void obtainDateConverter(ObjectInspector[] arguments, int i,
-      PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
+                                     PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
     PrimitiveObjectInspector inOi = (PrimitiveObjectInspector) arguments[i];
     PrimitiveCategory inputType = inOi.getPrimitiveCategory();
     ObjectInspector outOi;
     switch (inputType) {
-    case STRING:
-    case VARCHAR:
-    case CHAR:
-      outOi = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
-      break;
-    case TIMESTAMP:
-    case DATE:
-    case VOID:
-      outOi = PrimitiveObjectInspectorFactory.writableDateObjectInspector;
-      break;
-    default:
-      throw new UDFArgumentTypeException(i, getFuncName()
-          + " only takes STRING_GROUP or DATE_GROUP types as " + getArgOrder(i) + " argument, got "
-          + inputType);
+      case STRING:
+      case VARCHAR:
+      case CHAR:
+        outOi = PrimitiveObjectInspectorFactory.writableStringObjectInspector;
+        break;
+      case TIMESTAMP:
+      case DATE:
+      case VOID:
+        outOi = PrimitiveObjectInspectorFactory.writableDateObjectInspector;
+        break;
+      default:
+        throw new UDFArgumentTypeException(i, getFuncName()
+                + " only takes STRING_GROUP or DATE_GROUP types as " + getArgOrder(i) + " argument, got "
+                + inputType);
     }
     converters[i] = ObjectInspectorConverters.getConverter(inOi, outOi);
     inputTypes[i] = inputType;
   }
 
   protected void obtainTimestampConverter(ObjectInspector[] arguments, int i,
-      PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
+                                          PrimitiveCategory[] inputTypes, Converter[] converters) throws UDFArgumentTypeException {
     PrimitiveObjectInspector inOi = (PrimitiveObjectInspector) arguments[i];
     PrimitiveCategory inputType = inOi.getPrimitiveCategory();
     ObjectInspector outOi;
     switch (inputType) {
-    case STRING:
-    case VARCHAR:
-    case CHAR:
-    case TIMESTAMP:
-    case DATE:
-      break;
-    default:
-      throw new UDFArgumentTypeException(i, getFuncName()
-          + " only takes STRING_GROUP or DATE_GROUP types as " + getArgOrder(i) + " argument, got "
-          + inputType);
+      case STRING:
+      case VARCHAR:
+      case CHAR:
+      case TIMESTAMP:
+      case DATE:
+        break;
+      default:
+        throw new UDFArgumentTypeException(i, getFuncName()
+                + " only takes STRING_GROUP or DATE_GROUP types as " + getArgOrder(i) + " argument, got "
+                + inputType);
     }
     outOi = PrimitiveObjectInspectorFactory.writableTimestampObjectInspector;
     converters[i] = ObjectInspectorConverters.getConverter(inOi, outOi);
@@ -427,7 +425,7 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected String getStringValue(DeferredObject[] arguments, int i, Converter[] converters)
-      throws HiveException {
+          throws HiveException {
     Object obj;
     if ((obj = arguments[i].get()) == null) {
       return null;
@@ -436,7 +434,7 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected Integer getIntValue(DeferredObject[] arguments, int i, Converter[] converters)
-      throws HiveException {
+          throws HiveException {
     Object obj;
     if ((obj = arguments[i].get()) == null) {
       return null;
@@ -447,7 +445,7 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected Long getLongValue(DeferredObject[] arguments, int i, Converter[] converters)
-      throws HiveException {
+          throws HiveException {
     Object obj;
     if ((obj = arguments[i].get()) == null) {
       return null;
@@ -458,7 +456,7 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected Double getDoubleValue(DeferredObject[] arguments, int i, Converter[] converters)
-      throws HiveException {
+          throws HiveException {
     Object obj;
     if ((obj = arguments[i].get()) == null) {
       return null;
@@ -469,7 +467,7 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected Date getDateValue(DeferredObject[] arguments, int i, PrimitiveCategory[] inputTypes,
-      Converter[] converters) throws HiveException {
+                              Converter[] converters) throws HiveException {
     Object obj;
     if ((obj = arguments[i].get()) == null) {
       return null;
@@ -477,30 +475,30 @@ public abstract class GenericUDF implements Closeable {
 
     Date date;
     switch (inputTypes[i]) {
-    case STRING:
-    case VARCHAR:
-    case CHAR:
-      String dateStr = converters[i].convert(obj).toString();
-      try {
-        date = DateUtils.getDateFormat().parse(dateStr);
-      } catch (ParseException e) {
-        return null;
-      }
-      break;
-    case TIMESTAMP:
-    case DATE:
-      Object writableValue = converters[i].convert(obj);
-      date = ((DateWritable) writableValue).get();
-      break;
-    default:
-      throw new UDFArgumentTypeException(0, getFuncName()
-          + " only takes STRING_GROUP and DATE_GROUP types, got " + inputTypes[i]);
+      case STRING:
+      case VARCHAR:
+      case CHAR:
+        String dateStr = converters[i].convert(obj).toString();
+        try {
+          date = DateUtils.getDateFormat().parse(dateStr);
+        } catch (ParseException e) {
+          return null;
+        }
+        break;
+      case TIMESTAMP:
+      case DATE:
+        Object writableValue = converters[i].convert(obj);
+        date = ((DateWritable) writableValue).get();
+        break;
+      default:
+        throw new UDFArgumentTypeException(0, getFuncName()
+                + " only takes STRING_GROUP and DATE_GROUP types, got " + inputTypes[i]);
     }
     return date;
   }
 
   protected Timestamp getTimestampValue(DeferredObject[] arguments, int i, Converter[] converters)
-      throws HiveException {
+          throws HiveException {
     Object obj;
     if ((obj = arguments[i].get()) == null) {
       return null;
@@ -521,7 +519,7 @@ public abstract class GenericUDF implements Closeable {
   }
 
   protected Integer getConstantIntValue(ObjectInspector[] arguments, int i)
-      throws UDFArgumentTypeException {
+          throws UDFArgumentTypeException {
     Object constValue = ((ConstantObjectInspector) arguments[i]).getWritableConstantValue();
     if (constValue == null) {
       return null;
@@ -535,13 +533,13 @@ public abstract class GenericUDF implements Closeable {
       v = ((ByteWritable) constValue).get();
     } else {
       throw new UDFArgumentTypeException(i, getFuncName() + " only takes INT/SHORT/BYTE types as "
-          + getArgOrder(i) + " argument, got " + constValue.getClass());
+              + getArgOrder(i) + " argument, got " + constValue.getClass());
     }
     return v;
   }
 
   protected Long getConstantLongValue(ObjectInspector[] arguments, int i)
-      throws UDFArgumentTypeException {
+          throws UDFArgumentTypeException {
     Object constValue = ((ConstantObjectInspector) arguments[i]).getWritableConstantValue();
     if (constValue == null) {
       return null;
@@ -557,8 +555,8 @@ public abstract class GenericUDF implements Closeable {
       v = ((ByteWritable) constValue).get();
     } else {
       throw new UDFArgumentTypeException(i, getFuncName()
-          + " only takes LONG/INT/SHORT/BYTE types as " + getArgOrder(i) + " argument, got "
-          + constValue.getClass());
+              + " only takes LONG/INT/SHORT/BYTE types as " + getArgOrder(i) + " argument, got "
+              + constValue.getClass());
     }
     return v;
   }
@@ -566,12 +564,12 @@ public abstract class GenericUDF implements Closeable {
   protected String getArgOrder(int i) {
     i++;
     switch (i % 100) {
-    case 11:
-    case 12:
-    case 13:
-      return i + "th";
-    default:
-      return i + ORDINAL_SUFFIXES[i % 10];
+      case 11:
+      case 12:
+      case 13:
+        return i + "th";
+      default:
+        return i + ORDINAL_SUFFIXES[i % 10];
     }
   }
 }

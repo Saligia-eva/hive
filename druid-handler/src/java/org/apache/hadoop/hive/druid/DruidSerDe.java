@@ -1,6 +1,7 @@
 package org.apache.hadoop.hive.druid;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.druid.struct.DruidStruct;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedSerde;
 import org.apache.hadoop.hive.ql.io.orc.OrcStruct;
@@ -175,6 +176,6 @@ public class DruidSerDe extends AbstractSerDe {
 
     @Override
     public Object deserialize(Writable writable) throws SerDeException {
-        return writable;
+        return ((DruidStruct)writable).getFields();
     }
 }
