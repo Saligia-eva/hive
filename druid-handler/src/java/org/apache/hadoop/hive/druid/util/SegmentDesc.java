@@ -17,6 +17,8 @@ import java.util.Set;
  */
 public class SegmentDesc {
 
+    public static final String HIVE_INPUT_DIR = "mapred.input.dir";
+
     public static final String SEGMENT_DESC = "/descriptor.json";
     public static final String SEGMENT_FILE = "/index.zip";
 

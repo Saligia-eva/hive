@@ -35,7 +35,7 @@ public class DruidSerDe extends AbstractSerDe {
     private List<ObjectInspector> columnOIs;  // 记录所有的列解析
     private List<String> columnTypes;         // 记录所有的列格式
     private int numCols;                      // 记录列数量
-    private String timeColmn;                    // 时间范围列
+    private String timeColmn;                 // 时间范围列
 
 
 
@@ -142,7 +142,6 @@ public class DruidSerDe extends AbstractSerDe {
 
         columnTypes.add(type);
     }
-
 
     @Override
     public Class<? extends Writable> getSerializedClass() {

@@ -67,52 +67,27 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
     @Override
     public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
 
-        // 得到过滤器
-        DecomposedPredicate decomposedPredicate = getDecomposePredicate(job);
-
-        String timeCol  = job.get(SegmentDesc.DRUID_TIMESTAMP_COL);
-
-        // 获取输入路径
         Path[] paths = null;
         try {
-            paths = getInputPaths(job, decomposedPredicate);
+            paths = getInputPaths(job);
         } catch (HiveException e) {
             throw new IOException(e);
         }
 
         if(paths == null){
-            throw new IOException("Input path is null");
+            return null;
         }
+
         DruidSplit[] intpuSplit = new DruidSplit[paths.length];
 
         for(int i = 0 ; i < intpuSplit.length; i++){
             intpuSplit[i] = new DruidSplit(paths[i], 0, 0, null);
-            intpuSplit[i].setDecomposedPredicate((ExprNodeGenericFuncDesc)decomposedPredicate.pushedPredicateObject);
+            intpuSplit[i].put(SegmentDesc.DRUID_TIMESTAMP_COL, job.get(SegmentDesc.DRUID_TIMESTAMP_COL));
         }
 
         return intpuSplit;
     }
 
-    public static DecomposedPredicate getDecomposePredicate(JobConf job){
-        DecomposedPredicate decomposedPredicate = new DecomposedPredicate();
-
-        // 得到时间过滤
-        String filterExprSerialized = job.get(TableScanDesc.FILTER_EXPR_CONF_STR);
-        if(filterExprSerialized != null){
-            ExprNodeGenericFuncDesc filterExpr =
-                    Utilities.deserializeExpression(filterExprSerialized);
-            decomposedPredicate.pushedPredicate = filterExpr;
-        }
-
-        // 解析后期聚合方式
-        String filterObjectSerialized = job.get(TableScanDesc.FILTER_OBJECT_CONF_STR);
-        if(filterObjectSerialized != null){
-            ExprNodeGenericFuncDesc predicate = Utilities.deserializeExpression(filterObjectSerialized);
-            decomposedPredicate.pushedPredicateObject = predicate;
-        }
-
-        return decomposedPredicate;
-    }
 
     /**
      * <pre>
@@ -122,14 +97,19 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
      *
      * @author　saligia
      * @param conf 任务配置信息
-     * @param decomposedPredicate 谓词信息
      * @return　path 路径
      */
-    public Path[] getInputPaths(JobConf conf, DecomposedPredicate decomposedPredicate) throws IOException, HiveException {
+    public Path[] getInputPaths(JobConf conf) throws IOException, HiveException {
 
         //.../${TableName}/${StartTime}_${EndTime}/${TimeVersion}/${File}
+        // 得到时间过滤
+        ExprNodeGenericFuncDesc filterExpr = null;
+        String filterExprSerialized = conf.get(TableScanDesc.FILTER_EXPR_CONF_STR);
+        if(filterExprSerialized != null){
+            filterExpr = Utilities.deserializeExpression(filterExprSerialized);
+        }
         // 获取输入路径
-        String tablePath = conf.get("mapred.input.dir", "");
+        String tablePath = conf.get(SegmentDesc.HIVE_INPUT_DIR, "");
         FileSystem fs = FileSystem.get(conf);
 
         // 获取　TableName
@@ -148,14 +128,12 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
                 continue;
             }
 
-            if (decomposedPredicate.pushedPredicate != null) {
-                ExprNodeGenericFuncDesc funcDesc = decomposedPredicate.pushedPredicate;
+            // 得到时间过滤
+            if (filterExpr != null) {
 
                 String []timePath = timeFileStatus.getPath().getName().split("_");
-
-                DateTime dateTimeStart;  //= DateTime.parse(timePath[0].split("T")[0]);
-                DateTime dateTimeStop; // = DateTime.parse(timePath[1].split("T")[0]);
-
+                DateTime dateTimeStart;
+                DateTime dateTimeStop;
                 if(!timeFileStatus.getPath().getName().contains(":")){
                     dateTimeStart = DateTime.parse(timePath[0], DateTimeFormat.forPattern("yyyyMMdd'T'HHmmss.SSSZ"));
                     dateTimeStop = DateTime.parse(timePath[1], DateTimeFormat.forPattern("yyyyMMdd'T'HHmmss.SSSZ"));
@@ -163,8 +141,7 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
                     dateTimeStart = DateTime.parse(timePath[0], DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
                     dateTimeStop = DateTime.parse(timePath[1], DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
                 }
-
-                if(!(boolean)((ExprNodeConstantDesc)getTimeFilter(dateTimeStart, dateTimeStop, funcDesc)).getValue()){
+                if(!(boolean)((ExprNodeConstantDesc)getTimeFilter(dateTimeStart, dateTimeStop, filterExpr)).getValue()){
                     continue;
                 }
             }
@@ -279,7 +256,7 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
         private int currentNum;                                                            // 当前读取的行数
         private ImmutableBitmap bitFileter ;                                               // 过滤器工具
 
-        public DruidRecordReader(JobConf conf, File file, ExprNodeGenericFuncDesc serializable) throws IOException {
+        public DruidRecordReader(JobConf conf, File file) throws IOException {
             ObjectMapper objectMapper = new DefaultObjectMapper((JsonFactory) null);
             IndexIO druidIndexIO = new IndexIO( objectMapper,
                     new DruidProcessingConfig() {
@@ -303,8 +280,10 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
 
             this.druidSegment = new DruidSegment(colNames.length, colNames, colTypes);
 
-            if(serializable != null){
-                this.bitFileter = getDimensionFileter(serializable);
+            String filterObjectSerialized = conf.get(TableScanDesc.FILTER_OBJECT_CONF_STR);
+            if(filterObjectSerialized != null){
+                ExprNodeGenericFuncDesc serializable = Utilities.deserializeExpression(filterObjectSerialized);
+                this.bitFileter = getDimensionFileter(serializable);;
             }
 
             this.rowNum = queryableIndex.getNumRows();
@@ -471,7 +450,12 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
      */
     private void checkSegmentDesc (InputSplit split, JobConf job) throws IOException {
 
-        FileSplit fileSplit = (FileSplit) split;
+        DruidSplit fileSplit = (DruidSplit) split;
+
+        for(String key : fileSplit.getKeys()){
+            job.set(key, fileSplit.get(key));
+        }
+
         Path path = new Path(fileSplit.getPath().toString() + SegmentDesc.SEGMENT_DESC);
         FileSystem fs = fileSplit.getPath().getFileSystem(job);
 
@@ -495,11 +479,6 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
         // 检查用户的字段是否存在，　检查格式是否正确
         String[] columns = job.get(serdeConstants.LIST_COLUMNS).split(",");
         String[] columnType = job.get(serdeConstants.LIST_COLUMN_TYPES).split(",");
-
-        String timeCol  = job.get(SegmentDesc.DRUID_TIMESTAMP_COL);
-        String filterExprSerialized = job.get(TableScanDesc.FILTER_EXPR_CONF_STR);
-        String filterObjectSerialized = job.get(TableScanDesc.FILTER_OBJECT_CONF_STR);
-
 
         // 剔除不属于表模式的列
         for(int i = 0 ; i < columns.length-3; i++){
@@ -576,7 +555,6 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
     @Override
     public RecordReader<NullWritable, DruidSegment> getRecordReader(InputSplit split, JobConf job, Reporter reporter) throws IOException {
 
-        DruidSplit druidSplit = (DruidSplit) split;
         checkSegmentDesc(split, job);
 
         // 下载文件到本地临时文件　: /tmp/${UserName}
@@ -595,6 +573,6 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
             throw new IOException("Get File Segment Error");
         }
 
-        return new DruidRecordReader(job, fout, ((DruidSplit) split).getDecomposedPredicate());
+        return new DruidRecordReader(job, fout);
     }
 }
