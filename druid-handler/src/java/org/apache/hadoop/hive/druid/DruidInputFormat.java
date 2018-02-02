@@ -485,8 +485,8 @@ public class DruidInputFormat implements InputFormat<NullWritable, DruidSegment>
         while((strLen = reader.readLine()) !=  null){
             buffer.append(strLen);
         }
-        reader.close();
 
+        reader.close();
 
         JsonParser parser = factory.createJsonParser(buffer.toString());
         JsonNode descNode = mapper.readTree(parser);
