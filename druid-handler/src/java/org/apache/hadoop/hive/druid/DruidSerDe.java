@@ -1,20 +1,14 @@
 package org.apache.hadoop.hive.druid;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.druid.struct.DruidStruct;
-import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
-import org.apache.hadoop.hive.ql.exec.vector.VectorizedSerde;
-import org.apache.hadoop.hive.ql.io.orc.OrcStruct;
+import org.apache.hadoop.hive.druid.util.DruidSegment;
+import org.apache.hadoop.hive.druid.util.SegmentDesc;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.*;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory.ObjectInspectorOptions;
-import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
 import org.apache.hadoop.io.Writable;
-import org.stringtemplate.v4.ST;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -32,11 +26,9 @@ import java.util.Properties;
  * @date 18-1-23
  */
 @SerDeSpec(schemaProps = {
-        DruidSerDe.DRUID_TIMESTAMP_COL
+        SegmentDesc.DRUID_TIMESTAMP_COL
         })
 public class DruidSerDe extends AbstractSerDe {
-
-
 
     private List<String> columnNames;         // 记录所有的列名
     private List<String> columnComments;      // 记录所有的列说明
@@ -45,7 +37,7 @@ public class DruidSerDe extends AbstractSerDe {
     private int numCols;                      // 记录列数量
     private String timeColmn;                    // 时间范围列
 
-    public static final String DRUID_TIMESTAMP_COL = "_druid_timestamp";
+
 
     private ObjectInspector inspector = null;
     private final DruidSerdeRow row = new DruidSerdeRow();
@@ -95,7 +87,7 @@ public class DruidSerDe extends AbstractSerDe {
         String columnNameProperty = table.getProperty(serdeConstants.LIST_COLUMNS);
         // NOTE: if "columns.types" is missing, all columns will be of String type
         String columnTypeProperty = table.getProperty(serdeConstants.LIST_COLUMN_TYPES);
-        timeColmn = table.getProperty(DRUID_TIMESTAMP_COL);
+        timeColmn = table.getProperty(SegmentDesc.DRUID_TIMESTAMP_COL);
 
 
         if(columnNameProperty == null || columnTypeProperty == null){
@@ -139,7 +131,7 @@ public class DruidSerDe extends AbstractSerDe {
             columnOIs.add(reflectionObjectInspector);
         else if (type.equals("int"))
             columnOIs.add(ObjectInspectorFactory.getReflectionObjectInspector(int.class, ObjectInspectorOptions.JAVA));
-        else if (type.equals("long"))
+        else if (type.equals("bigint"))
             columnOIs.add(ObjectInspectorFactory.getReflectionObjectInspector(long.class, ObjectInspectorOptions.JAVA));
         else if (type.equals("float"))
             columnOIs
@@ -176,6 +168,6 @@ public class DruidSerDe extends AbstractSerDe {
 
     @Override
     public Object deserialize(Writable writable) throws SerDeException {
-        return ((DruidStruct)writable).getFields();
+        return ((DruidSegment)writable).getFields();
     }
 }

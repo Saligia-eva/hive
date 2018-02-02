@@ -1,11 +1,13 @@
-package org.apache.hadoop.hive.druid.struct;
+package org.apache.hadoop.hive.druid.util;
 import org.apache.hadoop.io.Writable;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <pre>
@@ -15,11 +17,49 @@ import java.util.List;
  * @author saligia
  * @date 18-1-23
  */
-public class  DruidStruct implements Writable {
+public class DruidSegment implements Writable {
     private Object[] fields ;
+    private ColumnTypeMap[] colDescs ;
+    private Map<String, String> colMap = new HashMap<String,String>();
 
-    public DruidStruct(int colNum){
+    public DruidSegment(int colNum, String[] names, String[] types){
         fields = new Object[colNum];
+        colDescs = new ColumnTypeMap[colNum];
+
+        for(int i = 0 ; i < colNum; i++){
+            colDescs[i] = new ColumnTypeMap(names[i], types[i]);
+            colMap.put(names[i], types[i]);
+        }
+    }
+
+    public static class ColumnTypeMap{
+        private String colName ;
+        private String colType ;
+
+        public ColumnTypeMap(String name, String colType){
+            this.colName = name;
+            this.colType = colType;
+        }
+
+        public String getColName() {
+            return colName;
+        }
+
+        public String getColType() {
+            return colType;
+        }
+    }
+
+    public String getFileldName(int index){
+        return colDescs[index].getColName();
+    }
+
+    public String getFileldTypeById(int index){
+        return colDescs[index].getColType();
+    }
+
+    public String getFieldTypeByName(String name){
+        return colMap.get(name);
     }
 
     public Object[] getFields() {

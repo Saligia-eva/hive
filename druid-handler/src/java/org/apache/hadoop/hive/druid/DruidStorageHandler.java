@@ -162,7 +162,8 @@ public class DruidStorageHandler extends DefaultStorageHandler
     }
     /**
      * <pre>
-     *     谓词下推工具
+     *     谓词下推工具，首先解析时间作为预过滤
+     *     后期的过滤项将分别推到InputSplit与FilterOperator中
      * </pre>
      *
      * @author　saligia
@@ -175,24 +176,18 @@ public class DruidStorageHandler extends DefaultStorageHandler
     public DecomposedPredicate decomposePredicate(JobConf jobConf, Deserializer deserializer, ExprNodeDesc predicate) {
         DecomposedPredicate decomposedPredicate = new DecomposedPredicate();  // 需要使用深度优先遍历.
 
-        /**
-         * 获取时间列
-         */
-        if(deserializer instanceof DruidSerDe){
-            String timecolumn = ((DruidSerDe) deserializer).getTimeColumn();
-            IndexPredicateAnalyzer analyzer = newIndexPredicateAnalyzer(timecolumn);
-            List<IndexSearchCondition> conditions = new ArrayList<IndexSearchCondition>();
+        DruidSerDe druidSerDe = (DruidSerDe)deserializer;
 
-            ExprNodeGenericFuncDesc residualPredicate =
-                    (ExprNodeGenericFuncDesc)analyzer.analyzePredicate(predicate, conditions);
+        String timecolumn = druidSerDe.getTimeColumn();
+        IndexPredicateAnalyzer analyzer = newIndexPredicateAnalyzer(timecolumn);               // 处理时间
+        List<IndexSearchCondition> conditions = new ArrayList<IndexSearchCondition>();
 
-            decomposedPredicate.pushedPredicate = analyzer.translateSearchConditions(conditions);   // 预处理
-            decomposedPredicate.residualPredicate = residualPredicate;                              // OperatorTree中后期处理
-            decomposedPredicate.pushedPredicateObject = residualPredicate;                          // 后期处理
-        }
+        ExprNodeGenericFuncDesc residualPredicate =
+                (ExprNodeGenericFuncDesc)analyzer.analyzePredicate(predicate, conditions);
 
-
-        //decomposedPredicate.pushedPredicateObject = predicate;
+        decomposedPredicate.pushedPredicate = analyzer.translateSearchConditions(conditions);   // 预处理
+        decomposedPredicate.residualPredicate = residualPredicate;                              // OperatorTree中后期处理
+        decomposedPredicate.pushedPredicateObject = residualPredicate;                          // 后期处理
 
         return decomposedPredicate;
     }
